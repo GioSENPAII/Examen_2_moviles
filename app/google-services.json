@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "535308626160",
+    "project_id": "notifire-d37a5",
+    "storage_bucket": "notifire-d37a5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:535308626160:android:e2d04500871530399dfa35",
+        "android_client_info": {
+          "package_name": "com.example.notifire"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfYeOjZJQlFcA6DzU4Qk92YZEUBbIQqKk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:535308626160:android:520298db41f62e7e9dfa35",
+        "android_client_info": {
+          "package_name": "com.notifire.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfYeOjZJQlFcA6DzU4Qk92YZEUBbIQqKk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
