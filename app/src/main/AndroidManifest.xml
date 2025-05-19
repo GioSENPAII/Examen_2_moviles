@@ -1,3 +1,4 @@
+<!-- Archivo: app/src/main/AndroidManifest.xml -->
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
@@ -11,33 +12,56 @@
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round">
 
-        <!-- Main Entry -->
+        <!-- Splash Screen -->
         <activity
-            android:name=".auth.LoginActivity"
-            android:exported="true"> <!-- ✅ Agregado -->
-
+            android:name=".SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
+        <!-- Main Entry -->
+        <activity
+            android:name=".auth.LoginActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar" />
 
         <!-- Registro -->
-        <activity android:name=".auth.RegisterActivity" />
+        <activity
+            android:name=".auth.RegisterActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar" />
 
         <!-- Home según rol -->
-        <activity android:name=".home.HomeActivity" />
+        <activity
+            android:name=".home.HomeActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MaterialComponents.DayNight.DarkActionBar" />
 
         <!-- Perfil -->
-        <activity android:name=".profile.ProfileActivity" />
-        <activity android:name=".profile.EditProfileActivity" />
+        <activity
+            android:name=".profile.ProfileActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MaterialComponents.DayNight.DarkActionBar" />
+        <activity
+            android:name=".profile.EditProfileActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MaterialComponents.DayNight.DarkActionBar" />
 
         <!-- Historial -->
-        <activity android:name=".notifications.NotificationHistoryActivity" />
+        <activity
+            android:name=".notifications.NotificationHistoryActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MaterialComponents.DayNight.DarkActionBar" />
 
         <!-- Panel de envío de notificaciones -->
-        <activity android:name=".admin.NotificationPanelActivity" />
+        <activity
+            android:name=".admin.NotificationPanelActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MaterialComponents.DayNight.DarkActionBar" />
 
         <!-- Servicio FCM -->
         <service

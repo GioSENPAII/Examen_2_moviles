@@ -42,10 +42,17 @@
 
         <Button
             android:id="@+id/sendButton"
-            android:text="Enviar notificación"
+            android:text="Enviar a seleccionados"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp" />
+
+        <Button
+            android:id="@+id/sendAllButton"
+            android:text="Enviar a todos"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" />
 
     </LinearLayout>
 </ScrollView>
