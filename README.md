@@ -183,10 +183,6 @@ Las contribuciones son bienvenidas. Para contribuir:
 4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
 5. Crea un Pull Request
 
-## Imagenes
-
-
-
 ## Autor
 
 Giovanni Javier Longoria Bunoust - Estudiante de Ingeniería en Sistemas Computacionales
