@@ -193,13 +193,17 @@ class NotificationPanelActivity : AppCompatActivity() {
                 }
 
                 for (doc in result) {
-                    val uid = doc.getString("uid") ?: continue
+                    val uid = doc.id // Usar el ID del documento directamente
                     val name = doc.getString("name") ?: "Usuario"
                     val role = doc.getString("role") ?: "user"
 
                     Log.d("NotificationPanel", "Usuario encontrado: $name (ID: $uid, Rol: $role)")
 
                     if (uid != currentUid) {
+                        // Agregar el usuario a la lista inmediatamente
+                        userNames.add(name)
+                        userIds[name] = uid
+
                         // Buscar token del usuario
                         db.collection("tokens").document(uid).get()
                             .addOnSuccessListener { tokenDoc ->
@@ -207,26 +211,17 @@ class NotificationPanelActivity : AppCompatActivity() {
                                 Log.d("NotificationPanel", "Token para $name: ${token ?: "No encontrado"}")
 
                                 if (!token.isNullOrEmpty()) {
-                                    userNames.add(name)
                                     userTokens[name] = token
-                                    userIds[name] = uid
+                                    // Actualizar la vista después de obtener el token
                                     updateUserListView()
-                                    Log.d("NotificationPanel", "Usuario $name añadido con token")
-                                } else {
-                                    // Incluso sin token, guardar usuario para enviar notificación local
-                                    userNames.add(name)
-                                    userIds[name] = uid
-                                    updateUserListView()
-                                    Log.d("NotificationPanel", "Usuario $name añadido sin token")
                                 }
                             }
                             .addOnFailureListener { e ->
                                 Log.e("NotificationPanel", "Error al obtener token para $name: ${e.message}")
-                                // Incluso sin token, guardar usuario para enviar notificación local
-                                userNames.add(name)
-                                userIds[name] = uid
-                                updateUserListView()
                             }
+
+                        // Actualizar la vista para no esperar por los tokens
+                        updateUserListView()
                     }
                 }
             }

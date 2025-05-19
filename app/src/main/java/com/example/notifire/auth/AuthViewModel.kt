@@ -52,9 +52,16 @@ class AuthViewModel : ViewModel() {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnSuccessListener {
                 val uid = it.user?.uid ?: return@addOnSuccessListener
-                val user = User(uid, name, email, role)
 
-                db.collection("users").document(uid).set(user)
+                // Crear el objeto de usuario
+                val userData = hashMapOf(
+                    "uid" to uid,
+                    "name" to name,
+                    "email" to email,
+                    "role" to role
+                )
+
+                db.collection("users").document(uid).set(userData)
                     .addOnSuccessListener {
                         _authResult.value = if (role == "admin") {
                             "✅ Administrador creado exitosamente"
