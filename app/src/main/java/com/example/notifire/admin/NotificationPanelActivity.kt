@@ -1,4 +1,4 @@
-// Archivo: app/src/main/java/com/example/notifire/admin/NotificationPanelActivity.kt
+// Archivo actualizado: app/src/main/java/com/example/notifire/admin/NotificationPanelActivity.kt
 
 package com.example.notifire.admin
 
@@ -6,33 +6,28 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import com.android.volley.Request
-import com.android.volley.Response
-import com.android.volley.toolbox.JsonObjectRequest
-import com.android.volley.toolbox.Volley
 import com.example.notifire.R
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.functions.FirebaseFunctions
-import org.json.JSONArray
-import org.json.JSONObject
 
 class NotificationPanelActivity : AppCompatActivity() {
 
     private lateinit var userTokens: MutableMap<String, String>
+    private lateinit var userIds: MutableMap<String, String>
     private lateinit var userNames: MutableList<String>
     private lateinit var userListView: ListView
     private lateinit var sendButton: Button
     private lateinit var sendAllButton: Button
     private lateinit var titleEditText: EditText
     private lateinit var messageEditText: EditText
-    private lateinit var functions: FirebaseFunctions
+    private lateinit var localNotificationManager: LocalNotificationManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_notification_panel)
 
         userTokens = mutableMapOf()
+        userIds = mutableMapOf()
         userNames = mutableListOf()
 
         userListView = findViewById(R.id.userListView)
@@ -41,18 +36,18 @@ class NotificationPanelActivity : AppCompatActivity() {
         titleEditText = findViewById(R.id.editTextTitle)
         messageEditText = findViewById(R.id.editTextMessage)
 
-        // Inicializar Firebase Functions
-        functions = FirebaseFunctions.getInstance()
+        // Inicializar el gestor de notificaciones local
+        localNotificationManager = LocalNotificationManager(this)
 
         loadUsers()
 
         sendButton.setOnClickListener {
-            val selectedTokens = mutableListOf<String>()
+            val selectedUserIds = mutableListOf<String>()
             for (i in 0 until userListView.count) {
                 if (userListView.isItemChecked(i)) {
                     userNames[i].let { name ->
-                        userTokens[name]?.let { token ->
-                            selectedTokens.add(token)
+                        userIds[name]?.let { userId ->
+                            selectedUserIds.add(userId)
                         }
                     }
                 }
@@ -66,8 +61,24 @@ class NotificationPanelActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            if (selectedTokens.isNotEmpty()) {
-                sendNotification(title, message, selectedTokens)
+            if (selectedUserIds.isNotEmpty()) {
+                localNotificationManager.sendToSpecificUsers(
+                    title = title,
+                    message = message,
+                    userIds = selectedUserIds,
+                    onSuccess = {
+                        Toast.makeText(this, "Notificación enviada correctamente", Toast.LENGTH_SHORT).show()
+                        titleEditText.text.clear()
+                        messageEditText.text.clear()
+                        // Desmarcar todas las selecciones
+                        for (i in 0 until userListView.count) {
+                            userListView.setItemChecked(i, false)
+                        }
+                    },
+                    onError = { error ->
+                        Toast.makeText(this, "Error al enviar notificación: $error", Toast.LENGTH_SHORT).show()
+                    }
+                )
             } else {
                 Toast.makeText(this, "Selecciona al menos un usuario", Toast.LENGTH_SHORT).show()
             }
@@ -82,7 +93,18 @@ class NotificationPanelActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            sendNotificationToAll(title, message)
+            localNotificationManager.sendToAllUsers(
+                title = title,
+                message = message,
+                onSuccess = {
+                    Toast.makeText(this, "Notificación enviada a todos los usuarios", Toast.LENGTH_SHORT).show()
+                    titleEditText.text.clear()
+                    messageEditText.text.clear()
+                },
+                onError = { error ->
+                    Toast.makeText(this, "Error al enviar notificación: $error", Toast.LENGTH_SHORT).show()
+                }
+            )
         }
     }
 
@@ -105,6 +127,7 @@ class NotificationPanelActivity : AppCompatActivity() {
                                 if (!token.isNullOrEmpty()) {
                                     userNames.add(name)
                                     userTokens[name] = token
+                                    userIds[name] = uid
                                     updateUserListView()
                                 }
                             }
@@ -120,47 +143,5 @@ class NotificationPanelActivity : AppCompatActivity() {
         val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_multiple_choice, userNames)
         userListView.choiceMode = ListView.CHOICE_MODE_MULTIPLE
         userListView.adapter = adapter
-    }
-
-    private fun sendNotification(title: String, message: String, tokens: List<String>) {
-        val data = hashMapOf(
-            "title" to title,
-            "message" to message,
-            "tokens" to tokens
-        )
-
-        functions.getHttpsCallable("sendNotification")
-            .call(data)
-            .addOnSuccessListener {
-                Toast.makeText(this, "Notificación enviada correctamente", Toast.LENGTH_SHORT).show()
-                titleEditText.text.clear()
-                messageEditText.text.clear()
-                // Desmarcar todas las selecciones
-                for (i in 0 until userListView.count) {
-                    userListView.setItemChecked(i, false)
-                }
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Error al enviar notificación: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-    }
-
-    private fun sendNotificationToAll(title: String, message: String) {
-        val data = hashMapOf(
-            "title" to title,
-            "message" to message,
-            "topic" to "all_users"
-        )
-
-        functions.getHttpsCallable("sendNotificationToTopic")
-            .call(data)
-            .addOnSuccessListener {
-                Toast.makeText(this, "Notificación enviada a todos los usuarios", Toast.LENGTH_SHORT).show()
-                titleEditText.text.clear()
-                messageEditText.text.clear()
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Error al enviar notificación: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
     }
 }
