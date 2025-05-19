@@ -18,6 +18,7 @@ import com.example.notifire.R
 import com.example.notifire.home.HomeActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
@@ -52,6 +53,15 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         Log.d(TAG, "Nuevo token FCM recibido: $token")
         // Guardar el nuevo token en Firestore
         saveTokenToFirestore(token)
+
+        // Suscribirse al tema all_users
+        FirebaseMessaging.getInstance().subscribeToTopic("all_users")
+            .addOnSuccessListener {
+                Log.d(TAG, "Suscrito al tema 'all_users' correctamente")
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error al suscribirse al tema: ${e.message}")
+            }
     }
 
     private fun saveTokenToFirestore(token: String) {

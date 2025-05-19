@@ -68,17 +68,11 @@ class NotificationPanelActivity : AppCompatActivity() {
         loadUsers()
 
         // Configurar listener para enviar a usuarios seleccionados
+        // En el método onclick del sendButton:
+
         sendButton.setOnClickListener {
             val selectedUserIds = mutableListOf<String>()
-            for (i in 0 until userListView.count) {
-                if (userListView.isItemChecked(i)) {
-                    userNames[i].let { name ->
-                        userIds[name]?.let { userId ->
-                            selectedUserIds.add(userId)
-                        }
-                    }
-                }
-            }
+            // ... obtener los usuarios seleccionados ...
 
             val title = titleEditText.text.toString()
             val message = messageEditText.text.toString()
@@ -91,25 +85,16 @@ class NotificationPanelActivity : AppCompatActivity() {
             if (selectedUserIds.isNotEmpty()) {
                 progressBar.visibility = View.VISIBLE
 
-                // 1. Intentar enviar vía FCM (Cloud Functions)
+                // 1. Mostrar notificación local inmediatamente como respaldo
+                localNotificationManager.sendLocalNotification(title, message)
+
+                // 2. Intentar enviar vía FCM (Cloud Functions)
                 fcmSender.sendToSpecificUsers(
                     title = title,
                     message = message,
                     userIds = selectedUserIds,
                     onSuccess = {
                         Log.d("NotificationPanel", "Notificación enviada vía FCM correctamente")
-                    },
-                    onError = { error ->
-                        Log.e("NotificationPanel", "Error al enviar vía FCM: $error")
-                    }
-                )
-
-                // 2. Enviar también notificación local como respaldo
-                localNotificationManager.sendToSpecificUsers(
-                    title = title,
-                    message = message,
-                    userIds = selectedUserIds,
-                    onSuccess = {
                         progressBar.visibility = View.GONE
                         Toast.makeText(this, "Notificación enviada correctamente", Toast.LENGTH_SHORT).show()
                         titleEditText.text.clear()
@@ -120,8 +105,10 @@ class NotificationPanelActivity : AppCompatActivity() {
                         }
                     },
                     onError = { error ->
+                        Log.e("NotificationPanel", "Error al enviar vía FCM: $error")
+                        // Falló el FCM pero la notificación local ya se mostró
                         progressBar.visibility = View.GONE
-                        Toast.makeText(this, "Error al enviar notificación: $error", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Notificación enviada solo localmente", Toast.LENGTH_SHORT).show()
                     }
                 )
             } else {

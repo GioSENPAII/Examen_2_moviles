@@ -43,6 +43,8 @@ class LocalNotificationManager(private val context: Context) {
         }
     }
 
+    // En LocalNotificationManager.kt:
+
     fun sendLocalNotification(title: String, message: String) {
         val intent = Intent(context, HomeActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -64,6 +66,20 @@ class LocalNotificationManager(private val context: Context) {
             val notificationId = Random().nextInt(1000)
             NotificationManagerCompat.from(context).notify(notificationId, builder.build())
             Log.d("LocalNotification", "Notificación local mostrada: $title - $message")
+
+            // Guardar también en la base de datos del usuario actual
+            val currentUser = FirebaseAuth.getInstance().currentUser
+            if (currentUser != null) {
+                FirebaseFirestore.getInstance()
+                    .collection("notifications")
+                    .document(currentUser.uid)
+                    .collection("items")
+                    .add(mapOf(
+                        "title" to title,
+                        "message" to message,
+                        "timestamp" to System.currentTimeMillis()
+                    ))
+            }
         } catch (e: SecurityException) {
             Log.e("LocalNotification", "Error al mostrar notificación: ${e.message}")
         }

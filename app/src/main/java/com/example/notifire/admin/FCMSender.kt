@@ -54,6 +54,21 @@ class FCMSender(private val context: Context) {
                     Log.w(TAG, "No se encontraron tokens válidos para los usuarios seleccionados")
                 }
 
+                // Guardar las notificaciones en la colección de notificaciones para cada usuario
+                for (userId in userIds) {
+                    val notifData = hashMapOf(
+                        "title" to title,
+                        "message" to message,
+                        "timestamp" to System.currentTimeMillis()
+                    )
+
+                    db.collection("notifications")
+                        .document(userId)
+                        .collection("items")
+                        .add(notifData)
+                        .await()
+                }
+
                 withContext(Dispatchers.Main) {
                     onSuccess()
                 }
@@ -87,6 +102,31 @@ class FCMSender(private val context: Context) {
                 db.collection("notification_requests")
                     .add(notificationData)
                     .await()
+
+                // Obtener todos los usuarios para guardar en sus colecciones
+                val snapshot = db.collection("users")
+                    .get()
+                    .await()
+
+                if (!snapshot.isEmpty) {
+                    val batch = db.batch()
+
+                    snapshot.documents.forEach { doc ->
+                        val userId = doc.id
+                        val notifRef = db.collection("notifications")
+                            .document(userId)
+                            .collection("items")
+                            .document()
+
+                        batch.set(notifRef, hashMapOf(
+                            "title" to title,
+                            "message" to message,
+                            "timestamp" to System.currentTimeMillis()
+                        ))
+                    }
+
+                    batch.commit().await()
+                }
 
                 Log.d(TAG, "Solicitud de notificación a todos enviada correctamente")
 
