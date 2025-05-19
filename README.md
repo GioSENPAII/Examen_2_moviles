@@ -96,7 +96,7 @@ app/src/main/java/com/example/notifire/
 
 1. **Clonar el repositorio**:
    ```
-   git clone https://github.com/tu-usuario/notifire.git
+   git clone https://github.com/tu-usuario/notifire.git](https://github.com/GioSENPAII/Examen_2_moviles.git
    ```
 
 2. **Configurar Firebase**:
