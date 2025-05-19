@@ -72,10 +72,23 @@ class NotificationPanelActivity : AppCompatActivity() {
 
         sendButton.setOnClickListener {
             val selectedUserIds = mutableListOf<String>()
-            // ... obtener los usuarios seleccionados ...
+
+            // Obtener los usuarios seleccionados
+            for (i in 0 until userListView.count) {
+                if (userListView.isItemChecked(i)) {
+                    val userName = userNames[i]
+                    val userId = userIds[userName]
+                    if (userId != null) {
+                        selectedUserIds.add(userId)
+                        Log.d("NotificationPanel", "Usuario seleccionado: $userName ($userId)")
+                    }
+                }
+            }
 
             val title = titleEditText.text.toString()
             val message = messageEditText.text.toString()
+
+            Log.d("NotificationPanel", "Título: $title, Mensaje: $message, Usuarios seleccionados: ${selectedUserIds.size}")
 
             if (title.isEmpty() || message.isEmpty()) {
                 Toast.makeText(this, "Debes completar el título y mensaje", Toast.LENGTH_SHORT).show()
@@ -162,32 +175,53 @@ class NotificationPanelActivity : AppCompatActivity() {
         val currentUid = FirebaseAuth.getInstance().currentUser?.uid
         val db = FirebaseFirestore.getInstance()
 
+        Log.d("NotificationPanel", "Comenzando carga de usuarios. Usuario actual: $currentUid")
+
+        userNames.clear() // Limpia las listas antes de cargar
+        userTokens.clear()
+        userIds.clear()
+
         db.collection("users")
             .get()
             .addOnSuccessListener { result ->
+                Log.d("NotificationPanel", "Obtenidos ${result.size()} usuarios de Firestore")
+
+                if (result.isEmpty) {
+                    Log.w("NotificationPanel", "No se encontraron usuarios en la base de datos")
+                    Toast.makeText(this, "No hay usuarios registrados", Toast.LENGTH_SHORT).show()
+                    return@addOnSuccessListener
+                }
+
                 for (doc in result) {
                     val uid = doc.getString("uid") ?: continue
                     val name = doc.getString("name") ?: "Usuario"
                     val role = doc.getString("role") ?: "user"
+
+                    Log.d("NotificationPanel", "Usuario encontrado: $name (ID: $uid, Rol: $role)")
 
                     if (uid != currentUid) {
                         // Buscar token del usuario
                         db.collection("tokens").document(uid).get()
                             .addOnSuccessListener { tokenDoc ->
                                 val token = tokenDoc.getString("token")
+                                Log.d("NotificationPanel", "Token para $name: ${token ?: "No encontrado"}")
+
                                 if (!token.isNullOrEmpty()) {
                                     userNames.add(name)
                                     userTokens[name] = token
                                     userIds[name] = uid
                                     updateUserListView()
+                                    Log.d("NotificationPanel", "Usuario $name añadido con token")
                                 } else {
                                     // Incluso sin token, guardar usuario para enviar notificación local
                                     userNames.add(name)
                                     userIds[name] = uid
                                     updateUserListView()
+                                    Log.d("NotificationPanel", "Usuario $name añadido sin token")
                                 }
                             }
-                            .addOnFailureListener {
+                            .addOnFailureListener { e ->
+                                Log.e("NotificationPanel", "Error al obtener token para $name: ${e.message}")
                                 // Incluso sin token, guardar usuario para enviar notificación local
                                 userNames.add(name)
                                 userIds[name] = uid
@@ -197,6 +231,7 @@ class NotificationPanelActivity : AppCompatActivity() {
                 }
             }
             .addOnFailureListener { e ->
+                Log.e("NotificationPanel", "Error al cargar usuarios: ${e.message}", e)
                 Toast.makeText(this, "Error al cargar usuarios: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }

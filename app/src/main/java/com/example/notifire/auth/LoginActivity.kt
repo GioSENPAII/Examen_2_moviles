@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -99,6 +100,15 @@ class LoginActivity : AppCompatActivity() {
                 .addOnSuccessListener {
                     // Suscribir al tema 'all_users'
                     FirebaseMessaging.getInstance().subscribeToTopic("all_users")
+                }
+
+            // Después de guardar el token en Firestore
+            FirebaseMessaging.getInstance().subscribeToTopic("all_users")
+                .addOnSuccessListener {
+                    Log.d("FCM", "Suscrito correctamente al tema 'all_users'")
+                }
+                .addOnFailureListener { e ->
+                    Log.e("FCM", "Error al suscribirse al tema 'all_users': ${e.message}")
                 }
         }
     }

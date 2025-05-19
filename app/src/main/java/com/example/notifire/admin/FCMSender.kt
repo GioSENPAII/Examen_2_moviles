@@ -93,7 +93,7 @@ class FCMSender(private val context: Context) {
                 val notificationData = hashMapOf(
                     "title" to title,
                     "message" to message,
-                    "topic" to "all_users",
+                    "topic" to "all_users", // Esto enviará a todos los usuarios suscritos al tema
                     "processed" to false,
                     "timestamp" to System.currentTimeMillis()
                 )

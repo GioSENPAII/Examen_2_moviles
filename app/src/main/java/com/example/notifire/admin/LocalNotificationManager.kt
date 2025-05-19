@@ -95,7 +95,7 @@ class LocalNotificationManager(private val context: Context) {
     ) {
         val db = FirebaseFirestore.getInstance()
 
-        val notificationData = hashMapOf(
+        val notificationData = hashMapOf<String, Any>(
             "title" to title,
             "message" to message,
             "timestamp" to System.currentTimeMillis(),
@@ -104,9 +104,9 @@ class LocalNotificationManager(private val context: Context) {
 
         if (sendToAll) {
             notificationData["topic"] = "all_users"
-        } else if (!tokens.isNullOrEmpty()) {
+        } else if (tokens != null && tokens.isNotEmpty()) {
             notificationData["tokens"] = tokens
-        } else if (!userIds.isNullOrEmpty()) {
+        } else if (userIds != null && userIds.isNotEmpty()) {
             notificationData["userIds"] = userIds
         }
 
