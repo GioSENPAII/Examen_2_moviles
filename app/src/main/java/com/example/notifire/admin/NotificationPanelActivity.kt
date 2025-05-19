@@ -1,112 +1,114 @@
 package com.example.notifire.admin
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import com.example.notifire.R
-import com.google.firebase.firestore.FirebaseFirestore
-import android.util.Log
-import com.android.volley.toolbox.Volley
-import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.Request
+import com.android.volley.toolbox.JsonObjectRequest
+import com.android.volley.toolbox.Volley
+import com.example.notifire.R
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import org.json.JSONArray
 import org.json.JSONObject
 
-
 class NotificationPanelActivity : AppCompatActivity() {
 
-    private lateinit var listViewUsers: ListView
-    private lateinit var adapter: ArrayAdapter<String>
-    private lateinit var selectedUids: MutableMap<String, String> // name -> uid
-
-    private val db = FirebaseFirestore.getInstance()
-    private val userList = mutableListOf<String>()
-    private val uidMap = mutableMapOf<String, String>() // name -> uid
+    private lateinit var userTokens: MutableList<String>
+    private lateinit var userNames: MutableList<String>
+    private lateinit var userListView: ListView
+    private lateinit var sendButton: Button
+    private lateinit var titleEditText: EditText
+    private lateinit var messageEditText: EditText
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_notification_panel)
 
-        val editTitle = findViewById<EditText>(R.id.editTextTitle)
-        val editMessage = findViewById<EditText>(R.id.editTextMessage)
-        listViewUsers = findViewById(R.id.listViewUsers)
-        val buttonSend = findViewById<Button>(R.id.buttonSend)
+        userTokens = mutableListOf()
+        userNames = mutableListOf()
 
-        adapter = ArrayAdapter(this, android.R.layout.simple_list_item_multiple_choice, userList)
-        listViewUsers.adapter = adapter
+        userListView = findViewById(R.id.userListView)
+        sendButton = findViewById(R.id.sendButton)
+        titleEditText = findViewById(R.id.editTextTitle)
+        messageEditText = findViewById(R.id.editTextMessage)
 
         loadUsers()
 
-        buttonSend.setOnClickListener {
-            val title = editTitle.text.toString()
-            val message = editMessage.text.toString()
-
-            val checkedPositions = listViewUsers.checkedItemPositions
+        sendButton.setOnClickListener {
             val selectedTokens = mutableListOf<String>()
-
-            for (i in 0 until userList.size) {
-                if (checkedPositions.get(i)) {
-                    val name = userList[i]
-                    val uid = uidMap[name]
-                    if (uid != null) {
-                        // Recuperar token de ese UID
-                        db.collection("tokens").document(uid).get().addOnSuccessListener { snap ->
-                            val token = snap.getString("token")
-                            if (token != null) {
-                                selectedTokens.add(token)
-                            }
-
-                            if (selectedTokens.size == checkedPositions.size()) {
-                                // Listo para enviar a backend
-                                sendNotification(title, message, selectedTokens)
-                            }
-                        }
-                    }
+            for (i in 0 until userListView.count) {
+                if (userListView.isItemChecked(i)) {
+                    selectedTokens.add(userTokens[i])
                 }
+            }
+
+            val title = titleEditText.text.toString()
+            val message = messageEditText.text.toString()
+
+            if (selectedTokens.isNotEmpty()) {
+                sendNotification(title, message, selectedTokens)
+            } else {
+                Toast.makeText(this, "Selecciona al menos un usuario", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
     private fun loadUsers() {
-        db.collection("users").get().addOnSuccessListener { result ->
-            userList.clear()
-            uidMap.clear()
-            for (doc in result) {
-                val name = doc.getString("name") ?: continue
-                val uid = doc.id
-                userList.add(name)
-                uidMap[name] = uid
+        val currentUid = FirebaseAuth.getInstance().currentUser?.uid
+        val db = FirebaseFirestore.getInstance()
+
+        db.collection("users")
+            .whereEqualTo("role", "user")
+            .get()
+            .addOnSuccessListener { result ->
+                for (doc in result) {
+                    val uid = doc.getString("uid")
+                    val name = doc.getString("name")
+
+                    if (uid != null && uid != currentUid) {
+                        db.collection("tokens").document(uid).get()
+                            .addOnSuccessListener { tokenDoc ->
+                                val token = tokenDoc.getString("token")
+                                if (!token.isNullOrEmpty()) {
+                                    userNames.add(name ?: "Usuario")
+                                    userTokens.add(token)
+                                    updateUserListView()
+                                }
+                            }
+                    }
+                }
             }
-            adapter.notifyDataSetChanged()
-        }
+    }
+
+    private fun updateUserListView() {
+        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_multiple_choice, userNames)
+        userListView.choiceMode = ListView.CHOICE_MODE_MULTIPLE
+        userListView.adapter = adapter
     }
 
     private fun sendNotification(title: String, message: String, tokens: List<String>) {
-        val url = "https://jsonplaceholder.typicode.com/posts" // SIMULACIÓN
-
-        val jsonBody = JSONObject().apply {
+        val json = JSONObject().apply {
             put("title", title)
-            put("message", message)
+            put("body", message)
             put("tokens", JSONArray(tokens))
         }
 
-        val request = object : JsonObjectRequest(
-            Method.POST, url, jsonBody,
+        val url = "https://example.com/sendNotification" // URL falsa para simular
+
+        val request = JsonObjectRequest(
+            Request.Method.POST, url, json,
             { response ->
-                Toast.makeText(this, "✅ Notificación simulada enviada", Toast.LENGTH_SHORT).show()
-                Log.d("Simulacion", "Respuesta: $response")
+                Log.d("Notification", "Éxito: $response")
+                Toast.makeText(this, "Notificación enviada", Toast.LENGTH_SHORT).show()
             },
             { error ->
-                Toast.makeText(this, "❌ Error en simulación", Toast.LENGTH_SHORT).show()
-                Log.e("Simulacion", "Error: $error")
+                Log.e("Notification", "Error: ${error.message}")
+                Toast.makeText(this, "Error al enviar", Toast.LENGTH_SHORT).show()
             }
-        ) {
-            override fun getHeaders(): MutableMap<String, String> {
-                return mutableMapOf("Content-Type" to "application/json")
-            }
-        }
+        )
 
         Volley.newRequestQueue(this).add(request)
     }
-
 }

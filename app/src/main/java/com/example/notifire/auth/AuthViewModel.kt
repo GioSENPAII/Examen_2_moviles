@@ -31,7 +31,12 @@ class AuthViewModel : ViewModel() {
 
                 db.collection("users").document(uid).set(user)
                     .addOnSuccessListener {
-                        _authResult.value = "Registro exitoso como $role"
+                        _authResult.value = if (role == "admin") {
+                            "✅ Administrador creado exitosamente"
+                        } else {
+                            "✅ Usuario creado exitosamente"
+                        }
+
                     }
                     .addOnFailureListener {
                         _authResult.value = "Error al guardar datos: ${it.message}"

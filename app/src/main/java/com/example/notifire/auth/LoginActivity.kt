@@ -24,8 +24,23 @@ class LoginActivity : AppCompatActivity() {
         val loginBtn = findViewById<Button>(R.id.buttonLogin)
 
         loginBtn.setOnClickListener {
-            viewModel.login(email.text.toString(), password.text.toString())
+            val emailStr = email.text.toString().trim()
+            val passwordStr = password.text.toString().trim()
+
+            if (emailStr.isEmpty() || passwordStr.isEmpty()) {
+                Toast.makeText(this, "Por favor llena todos los campos", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            viewModel.login(emailStr, passwordStr)
         }
+
+        val textRegister = findViewById<TextView>(R.id.textRegister)
+
+        textRegister.setOnClickListener {
+            startActivity(Intent(this, RegisterActivity::class.java))
+        }
+
 
         viewModel.authResult.observe(this, Observer {
             Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
