@@ -146,7 +146,8 @@ class LocalNotificationManager(private val context: Context) {
 
                 if (tokens.isNotEmpty()) {
                     // Intenta enviar vía Cloud Function
-                    sendViaCloudFunction(title, message, userIds, tokens)
+                    sendViaCloudFunction(title, message, userIds = userIds, tokens = tokens)
+
                 }
 
                 // Guardar en Firestore de todos modos
