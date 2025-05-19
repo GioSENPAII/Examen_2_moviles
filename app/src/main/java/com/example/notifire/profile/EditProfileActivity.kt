@@ -41,5 +41,6 @@ class EditProfileActivity : AppCompatActivity() {
                     Toast.makeText(this, "❌ Error al actualizar", Toast.LENGTH_SHORT).show()
                 }
         }
+
     }
 }

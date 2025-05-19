@@ -1,3 +1,4 @@
+// Archivo: functions/index.js (completo)
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();

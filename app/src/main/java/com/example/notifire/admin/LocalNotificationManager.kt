@@ -63,9 +63,46 @@ class LocalNotificationManager(private val context: Context) {
         try {
             val notificationId = Random().nextInt(1000)
             NotificationManagerCompat.from(context).notify(notificationId, builder.build())
+            Log.d("LocalNotification", "Notificación local mostrada: $title - $message")
         } catch (e: SecurityException) {
             Log.e("LocalNotification", "Error al mostrar notificación: ${e.message}")
         }
+    }
+
+    // Función para enviar vía Cloud Function
+    private fun sendViaCloudFunction(
+        title: String,
+        message: String,
+        userIds: List<String>? = null,
+        tokens: List<String>? = null,
+        sendToAll: Boolean = false
+    ) {
+        val db = FirebaseFirestore.getInstance()
+
+        val notificationData = hashMapOf(
+            "title" to title,
+            "message" to message,
+            "timestamp" to System.currentTimeMillis(),
+            "processed" to false
+        )
+
+        if (sendToAll) {
+            notificationData["topic"] = "all_users"
+        } else if (!tokens.isNullOrEmpty()) {
+            notificationData["tokens"] = tokens
+        } else if (!userIds.isNullOrEmpty()) {
+            notificationData["userIds"] = userIds
+        }
+
+        // Guardar la solicitud en Firestore para que sea procesada por la Cloud Function
+        db.collection("notification_requests")
+            .add(notificationData)
+            .addOnSuccessListener {
+                Log.d("FCM", "Solicitud de notificación enviada correctamente: ${it.id}")
+            }
+            .addOnFailureListener { e ->
+                Log.e("FCM", "Error al enviar solicitud de notificación: ${e.message}")
+            }
     }
 
     fun sendToSpecificUsers(
@@ -75,13 +112,28 @@ class LocalNotificationManager(private val context: Context) {
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        // Primero mostramos una notificación local para simular
+        // Mostrar notificación local inmediatamente para simular
         sendLocalNotification(title, message)
 
-        // Luego guardamos en Firestore
+        // Intentar enviar vía Cloud Function si tenemos tokens
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // Guardar notificación para cada usuario
+                // Obtener tokens para estos usuarios
+                val tokens = mutableListOf<String>()
+                for (userId in userIds) {
+                    val doc = db.collection("tokens").document(userId).get().await()
+                    val token = doc.getString("token")
+                    if (!token.isNullOrEmpty()) {
+                        tokens.add(token)
+                    }
+                }
+
+                if (tokens.isNotEmpty()) {
+                    // Intenta enviar vía Cloud Function
+                    sendViaCloudFunction(title, message, userIds, tokens)
+                }
+
+                // Guardar en Firestore de todos modos
                 for (userId in userIds) {
                     val notificationData = hashMapOf(
                         "title" to title,
@@ -114,10 +166,13 @@ class LocalNotificationManager(private val context: Context) {
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        // Primero mostramos una notificación local para simular
+        // Mostrar notificación local inmediatamente para simular
         sendLocalNotification(title, message)
 
-        // Luego guardamos en Firestore
+        // Intentar enviar vía Cloud Function a todos los usuarios
+        sendViaCloudFunction(title, message, sendToAll = true)
+
+        // Guardar en base de datos
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 // Obtener todos los usuarios
